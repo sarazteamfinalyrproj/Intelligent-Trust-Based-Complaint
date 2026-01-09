@@ -12,7 +12,7 @@ export default function MessageThread({ complaintId, currentUserRole, onClose })
     loadMessages()
     
     // Subscribe to real-time messages
-    const subscription = supabase
+    const channel = supabase
       .channel(`messages:${complaintId}`)
       .on('postgres_changes', {
         event: 'INSERT',
@@ -20,13 +20,16 @@ export default function MessageThread({ complaintId, currentUserRole, onClose })
         table: 'messages',
         filter: `complaint_id=eq.${complaintId}`
       }, (payload) => {
+        console.log('New message received:', payload)
         setMessages(prev => [...prev, payload.new])
-        scrollToBottom()
+        setTimeout(scrollToBottom, 100)
       })
-      .subscribe()
+      .subscribe((status) => {
+        console.log('Subscription status:', status)
+      })
 
     return () => {
-      subscription.unsubscribe()
+      supabase.removeChannel(channel)
     }
   }, [complaintId])
 
@@ -58,15 +61,24 @@ export default function MessageThread({ complaintId, currentUserRole, onClose })
 
     setSending(true)
     try {
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('messages')
         .insert([{
           complaint_id: complaintId,
           sender_role: currentUserRole,
           message: newMessage.trim()
         }])
+        .select()
+        .single()
 
       if (error) throw error
+      
+      // Optimistic update: add message immediately
+      if (data) {
+        setMessages(prev => [...prev, data])
+        setTimeout(scrollToBottom, 100)
+      }
+      
       setNewMessage('')
     } catch (err) {
       console.error('Error sending message:', err)

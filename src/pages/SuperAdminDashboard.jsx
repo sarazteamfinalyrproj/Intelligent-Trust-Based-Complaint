@@ -176,6 +176,8 @@ export default function SuperAdminDashboard({ user, onLogout }) {
               <ComplaintList 
                 complaints={complaints} 
                 onComplaintClick={setSelectedComplaint}
+                showChat={true}
+                currentUserRole="super_admin"
               />
             </div>
           )}
