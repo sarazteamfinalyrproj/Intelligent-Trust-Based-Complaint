@@ -1,12 +1,14 @@
 import { useState, useEffect } from 'react'
 import { getComplaints, signOut, supabase } from '../services/supabase'
 import ComplaintList from '../components/complaints/ComplaintList'
+import AnalyticsCharts from '../components/dashboard/AnalyticsCharts'
 
 export default function SuperAdminDashboard({ user, onLogout }) {
   const [complaints, setComplaints] = useState([])
   const [loading, setLoading] = useState(true)
   const [selectedComplaint, setSelectedComplaint] = useState(null)
   const [identityInfo, setIdentityInfo] = useState(null)
+  const [view, setView] = useState('complaints')
 
   useEffect(() => {
     loadComplaints()
@@ -93,10 +95,29 @@ export default function SuperAdminDashboard({ user, onLogout }) {
             </div>
           </div>
 
+          <div className="mb-6">
+            <div className="flex gap-2">
+              <button
+                onClick={() => setView('complaints')}
+                className={`px-4 py-2 rounded-md ${view === 'complaints' ? 'bg-indigo-600 text-white' : 'bg-white text-gray-700'}`}
+              >
+                Complaints
+              </button>
+              <button
+                onClick={() => setView('analytics')}
+                className={`px-4 py-2 rounded-md ${view === 'analytics' ? 'bg-indigo-600 text-white' : 'bg-white text-gray-700'}`}
+              >
+                Analytics
+              </button>
+            </div>
+          </div>
+
           {loading ? (
             <div className="text-center py-12">
               <p className="text-gray-500">Loading...</p>
             </div>
+          ) : view === 'analytics' ? (
+            <AnalyticsCharts complaints={complaints} />
           ) : selectedComplaint ? (
             <div className="bg-white shadow rounded-lg p-6">
               <button

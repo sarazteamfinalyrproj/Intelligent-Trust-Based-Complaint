@@ -79,7 +79,13 @@ export default function StudentDashboard({ user, onLogout }) {
                   <p className="text-gray-500">Loading...</p>
                 </div>
               ) : (
-                <ComplaintList complaints={complaints} />
+                <ComplaintList 
+                  complaints={complaints} 
+                  showFeedback={true}
+                  showChat={true}
+                  currentUserRole="student"
+                  onFeedbackSuccess={loadComplaints}
+                />
               )}
             </div>
 

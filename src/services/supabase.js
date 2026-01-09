@@ -212,6 +212,15 @@ export const getTrustHistory = async () => {
   return data
 }
 
+export const routeComplaint = async (complaintId, category) => {
+  const { data, error } = await supabase.functions.invoke('route-complaint', {
+    body: { complaintId, category }
+  })
+
+  if (error) throw error
+  return data
+}
+
 export const createComplaintWithAI = async (complaintData) => {
   const user = await getCurrentUser()
   if (!user) throw new Error('User not authenticated')
@@ -240,6 +249,12 @@ export const createComplaintWithAI = async (complaintData) => {
     await analyzeComplaint(complaint.id, complaintData.content)
   } catch (error) {
     console.error('AI analysis failed:', error)
+  }
+
+  try {
+    await routeComplaint(complaint.id, complaintData.category)
+  } catch (error) {
+    console.error('Auto-routing failed:', error)
   }
 
   return complaint

@@ -167,6 +167,8 @@ export default function AdminDashboard({ user, onLogout }) {
             <ComplaintList 
               complaints={complaints} 
               onComplaintClick={setSelectedComplaint}
+              showChat={true}
+              currentUserRole="admin"
             />
           )}
         </div>
