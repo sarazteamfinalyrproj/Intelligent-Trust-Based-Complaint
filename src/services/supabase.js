@@ -126,7 +126,15 @@ export const getUserComplaints = async () => {
 }
 
 export const updateComplaintStatus = async (complaintId, status) => {
+  const user = await getCurrentUser()
+  if (!user) throw new Error('User not authenticated')
+
   const updates = { status }
+  
+  if (status === 'in_progress') {
+    updates.assigned_to = user.id
+  }
+  
   if (status === 'resolved') {
     updates.resolved_at = new Date().toISOString()
   }
