@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { createComplaint, getDepartments } from '../../services/supabase'
+import { createComplaintWithAI, getDepartments } from '../../services/supabase'
 
 export default function ComplaintForm({ onSuccess }) {
   const [title, setTitle] = useState('')
@@ -8,6 +8,7 @@ export default function ComplaintForm({ onSuccess }) {
   const [departments, setDepartments] = useState([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
+  const [analyzing, setAnalyzing] = useState(false)
 
   useEffect(() => {
     loadDepartments()
@@ -28,23 +29,25 @@ export default function ComplaintForm({ onSuccess }) {
   const handleSubmit = async (e) => {
     e.preventDefault()
     setLoading(true)
+    setAnalyzing(true)
     setError(null)
 
     try {
-      await createComplaint({
+      const complaint = await createComplaintWithAI({
         title,
         category,
         content,
-        severity: 'low',
         status: 'pending'
       })
       
       setTitle('')
       setContent('')
-      alert('Complaint submitted successfully!')
+      setAnalyzing(false)
+      alert(`Complaint submitted successfully!\nSeverity detected: ${complaint.severity || 'Analyzing...'}`)
       if (onSuccess) onSuccess()
     } catch (err) {
       setError(err.message)
+      setAnalyzing(false)
     } finally {
       setLoading(false)
     }
@@ -68,6 +71,14 @@ export default function ComplaintForm({ onSuccess }) {
             🔒 Your identity is protected. Only Super Admins can access identity mapping for serious cases.
           </p>
         </div>
+
+        {analyzing && (
+          <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4">
+            <p className="text-sm text-yellow-700">
+              🤖 AI is analyzing your complaint for severity and spam detection...
+            </p>
+          </div>
+        )}
 
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -106,11 +117,15 @@ export default function ComplaintForm({ onSuccess }) {
           <textarea
             required
             rows="6"
+            minLength="20"
             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
-            placeholder="Describe your complaint in detail..."
+            placeholder="Describe your complaint in detail (minimum 20 characters)..."
             value={content}
             onChange={(e) => setContent(e.target.value)}
           />
+          <p className="text-xs text-gray-500 mt-1">
+            {content.length}/20 characters minimum • AI will analyze severity automatically
+          </p>
         </div>
 
         <button

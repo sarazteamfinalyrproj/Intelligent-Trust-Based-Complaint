@@ -161,3 +161,78 @@ export const getDepartments = async () => {
   if (error) throw error
   return data
 }
+
+export const analyzeComplaint = async (complaintId, content) => {
+  const { data, error } = await supabase.functions.invoke('analyze-complaint', {
+    body: { complaintId, content }
+  })
+
+  if (error) throw error
+  return data
+}
+
+export const detectSpam = async (content, userId) => {
+  const { data, error } = await supabase.functions.invoke('detect-spam', {
+    body: { content, userId }
+  })
+
+  if (error) throw error
+  return data
+}
+
+export const updateTrustScore = async (userId, action, complaintId = null) => {
+  const { data, error } = await supabase.functions.invoke('update-trust-score', {
+    body: { userId, action, complaintId }
+  })
+
+  if (error) throw error
+  return data
+}
+
+export const getTrustHistory = async () => {
+  const user = await getCurrentUser()
+  if (!user) throw new Error('User not authenticated')
+
+  const { data, error } = await supabase
+    .from('trust_history')
+    .select('*')
+    .eq('user_id', user.id)
+    .order('created_at', { ascending: false })
+    .limit(10)
+
+  if (error) throw error
+  return data
+}
+
+export const createComplaintWithAI = async (complaintData) => {
+  const user = await getCurrentUser()
+  if (!user) throw new Error('User not authenticated')
+
+  const spamCheck = await detectSpam(complaintData.content, user.id)
+  
+  if (spamCheck.isSpam) {
+    throw new Error(`Spam detected: ${spamCheck.reasons.join(', ')}`)
+  }
+
+  const { data: complaint, error: complaintError } = await supabase
+    .from('complaints')
+    .insert([{ ...complaintData, severity: 'low' }])
+    .select()
+    .single()
+
+  if (complaintError) throw complaintError
+
+  const { error: mapError } = await supabase
+    .from('anonymous_map')
+    .insert([{ complaint_id: complaint.id, user_id: user.id }])
+
+  if (mapError) throw mapError
+
+  try {
+    await analyzeComplaint(complaint.id, complaintData.content)
+  } catch (error) {
+    console.error('AI analysis failed:', error)
+  }
+
+  return complaint
+}
